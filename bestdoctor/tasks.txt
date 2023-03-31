@@ -1,0 +1,111 @@
+
+Напишите запрос, который возвращает id сотрудника с самой высокой зарплатой в рамках своего департамента
+________________________________________________________________________________________________________
+select id
+from 
+	(select id, salary,
+	max(salary) OVER(PARTITION BY department_id) as mspd
+	from employee
+	) tmp
+where salary = mspd
+________________________________________________________________________________________________________
+Напишите запрос, который возвращает id руководителей, в департаменте которых работает не более 5 человек
+________________________________________________________________________________________________________
+select id
+from 
+	(select 
+	 id, chief_flg,
+	count(department_id) OVER(PARTITION BY department_id) as persons_per_department
+	from employee
+	) tmp
+where persons_per_department <= 6   -- <= 5 если руководитель входит в число
+	and chief_flg is True
+________________________________________________________________________________________________________
+Напишите запрос, который возвращает id сотрудников, которые старше своего руководителя.
+________________________________________________________________________________________________________
+--с ходу я не смогу это написать, и в целом конструкция select( select (select (select)))
+--ощущается костыльной, но ничего лучше я не придумал
+
+SELECT id
+FROM (
+
+	SELECT *,
+		CASE --сравнивая департамент сотрудника и руководителя сравнил даты рождения
+		WHEN department_id = chief_dep AND birth_dt < chief_bd THEN TRUE
+		END AS compare
+	FROM (
+
+		SELECT employee.id, employee.department_id, employee.chief_flg, employee.birth_dt,
+		first_value(cbday) over (partition by department_id) as chief_bd, --заполнил колонку датой рождения
+		first_value(cdep) over (partition by department_id) as chief_dep --заполнил департаментом
+
+		FROM employee
+		left join( --получил даты рождения руководителей и их департамент
+			SELECT id, 
+			birth_dt as cbday,
+			department_id as cdep
+			FROM employee
+			where chief_flg is True
+			) tmp on tmp.id = employee.id
+		)tmp
+	)tmp
+WHERE compare is True --вывел только те, где birth_dt < chief_bd
+________________________________________________________________________________________________________
+Напишите запрос, который возвращает id 10-го самого старшего сотрудника в каждом подразделении
+________________________________________________________________________________________________________
+SELECT id
+FROM (select id, birth_dt,
+row_number() OVER (
+		PARTITION BY department_id ORDER BY birth_dt DESC
+		)  AS desc_bd_rank_per_dep
+FROM employee) tmp
+WHERE desc_bd_rank_per_dep = 10
+________________________________________________________________________________________________________
+Представь, что произошел сбой в базе и часть данных затерлась или исказилась. Какие бы ты сделал(а) проверки на корректность заполнения данных и отсутствие логических ошибок в таблице employee. Опиши тезис, который ты проверяешь и по возможности приложи запрос, которым бы ты вывел(а) все инциденты.
+*
+Например, тезис: зарплата сотрудника не может быть отрицательной
+запрос: select * from employee where salary < 0
+________________________________________________________________________________________________________
+
+1. Не появились ли дубликаты:
+SELECT id, name, department_id, chief_flg, birth_dt, salary, count(*)
+FROM employee
+GROUP BY 1, 2, 3, 4, 5, 6
+HAVING count(*) > 1 --отобразится строка, которая полностью дублирована
+
+2. В таблице id не указан как уникальный, и мог повторяться:
+SELECT * FROM employee as em
+WHERE (select count(*) from employee as emp
+where em.id = emp.id) > 1 --отобразятся и сами строки, и строки-дубликаты (по id)
+
+3. Проверка на null в значениях:
+SELECT *
+FROM employee 
+WHERE NOT employee IS NOT null
+
+4. Проверил количество (если знаю сколько chief_flg = True) на правильность:
+SELECT COUNT(
+	CASE WHEN chief_flg
+	THEN 1
+	END)
+FROM employee
+
+5. Подобное с department_id:
+SELECT COUNT(DISTINCT department_id)
+FROM employee
+
+и 
+
+SELECT DISTINCT department_id
+FROM employee
+
+  чтобы понять, не появились ли значения, которых там не должно быть
+
+6. Проверил бы birth_dt (salary), чтобы понять не появились ли "невозможные" даты (суммы):
+SELECT birth_dt
+FROM employee
+ORDER BY birth_dt
+
+SELECT birth_dt
+FROM employee
+ORDER BY birth_dt DESC
