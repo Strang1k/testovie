@@ -1,0 +1,53 @@
+_____________________________________________________________________
+Задача 2
+Вам дана sql таблица с действиями клиентов на сайте:
+
+
+client_id - int  |  created_at - timestamp  |  action_type - int
+1	    2021-01-01 12:00:00		1
+1	    2021-01-01 12:01:00		1
+1	    2021-01-01 12:02:00		2
+
+
+Подозрительными считаются действия разного типа (action_type) - совершенные с
+интервалом менее 10 секунд одним пользователем. напишите sql запрос который
+выведет все такие действия.
+_____________________________________________________________________
+
+
+
+(client_id | created_at | prev_created_at* | diff_sec* | action_type | prev_action_type | suspicious*)
+
+
+SELECT 
+client_id, 
+created_at,
+prev_created_at,  --можно удалить
+diff_sec,  --можно удалить
+action_type,
+prev_action_type,
+act_is_diff is true AND diff_sec <10 as suspicious  --можно удалить
+FROM(
+	SELECT
+	client_id, 
+	created_at,
+	action_type,
+	
+	LAG(created_at) OVER(PARTITION BY client_id
+			 ORDER BY created_at) AS prev_created_at, --столбец чтобы можно было
+			-- вычислить разницу в секундах между действиями
+	
+	EXTRACT(EPOCH FROM created_at) - EXTRACT(EPOCH FROM (LAG(created_at) 
+		OVER(PARTITION BY client_id
+		ORDER BY created_at))) AS diff_sec, -- разница между действиями в секундах
+	
+	LAG(action_type) OVER(PARTITION BY client_id
+			ORDER BY created_at) AS prev_action_type, -- предыдущее действие
+	
+	action_type != LAG(action_type) OVER(PARTITION BY client_id
+					ORDER BY created_at) AS act_is_diff -- проверка на действие != действие
+	FROM test_task
+) AS tmp
+
+WHERE act_is_diff is true AND diff_sec <10
+ORDER BY client_id, created_at
