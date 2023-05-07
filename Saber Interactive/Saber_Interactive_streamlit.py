@@ -7,10 +7,16 @@ import datetime
 
 
 st.set_page_config(layout='centered', initial_sidebar_state='expanded')
-keyv = {'BTC':'bitcoin', 'ETH':'ethereum', 'SOBAKA':'dogecoin'}
 
-сurrency = st.sidebar.selectbox("Select an asset: ", ['BTC', 'ETH', 'SOBAKA'])
-сurrency = keyv[сurrency]
+#получаем список активов
+url = 'https://api.coincap.io/v2/assets'
+assets_data = get(url).json()
+assets = []
+for i in range(len(assets_data['data'])):
+    assets.append(assets_data['data'][i]['id'])
+
+сurrency = st.sidebar.selectbox("Select an asset: ", assets)
+
 #data_interval = st.sidebar.selectbox("Select an asset: ", ['d1', 'm1', 'm5', 'm15', 'm30', 'h1', 'h2','h6', 'h12'])
 
 
