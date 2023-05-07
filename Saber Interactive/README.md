@@ -26,7 +26,7 @@ ended_at – время перехода задачи в другой стату
 
 
 
-PYTHON
+### PYTHON
 Создайте интерактивное приложение с помощью одного из веб фреймворков (streamlit/dash/panel), по следующему макету:
 ![image](https://user-images.githubusercontent.com/87659757/236690823-9d34d82f-e363-4952-9e58-e6aed0665155.png)
 
