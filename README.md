@@ -1,6 +1,6 @@
 Выполненные тестовые, которые сохранились <br/>
 
-Saber Interactive  - sqlite3, streamlit <br/>
+Saber Interactive  - sqlite3, streamlit (api request) <br/>
 Pride Games Studio - psql, a/b test theory <br/>
 EasyBot    - psql, a/b test theory <br/>
 bestdoctor - psql <br/>
